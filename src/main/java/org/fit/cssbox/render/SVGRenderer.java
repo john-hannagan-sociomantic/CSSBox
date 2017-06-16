@@ -156,13 +156,16 @@ public class SVGRenderer implements BoxRenderer
                 String stroke = "stroke:" + color + ";stroke-width:" + borders.top + "px;";
                 String style = stroke + "fill:white;";
 
-                int innerWidth = bb.width - borders.top;
-                int innerHeight = bb.height - borders.top;
+                int boxWidth = eb.getContentWidth();
+                int boxHeight = eb.getContentHeight();
+
+                int innerWidth = boxWidth - borders.top;
+                int innerHeight = boxHeight - borders.top;
 
                 double inset = borders.top / 2.0;
 
                 out.println( "<g style=\"" + style + "\" transform=\"translate(" + bb.x + " " + bb.y + ")\" >" );
-                out.println("<rect width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"stroke:none;\" />");
+                out.println("<rect width=\"" + boxWidth + "\" height=\"" + boxHeight + "\" style=\"stroke:none;\" />");
                 out.println("<rect x=\"" + inset + "\" y=\"" + inset + "\" width=\"" + innerWidth + "\" height=\"" + innerHeight + "\"  style=\"fill:none;\"  />");
                 out.println( "</g>" );
             }
