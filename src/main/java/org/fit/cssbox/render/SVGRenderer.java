@@ -97,14 +97,75 @@ public class SVGRenderer implements BoxRenderer
     {
         Rectangle bb = eb.getAbsoluteBorderBounds();
         if (eb instanceof Viewport)
+        {
             bb = eb.getClippedBounds(); //for the root box (Viewport), use the whole clipped content
+            out.println( "<!-- is instance of viewport: using getClippedBounds -->" );
+        }
         Color bg = eb.getBgcolor();
+
+
+        LengthSet borders = eb.getBorder();
+        boolean hasAllBorders = borders.top > 0 &&
+                                borders.right > 0 &&
+                                borders.bottom > 0 &&
+                                borders.left > 0 &&
+                                ( borders.top == borders.right && borders.top == borders.left && borders.top == borders.bottom );
 
         //background color
         if (bg != null)
         {
-            String style = "stroke:none;fill-opacity:1;fill:" + colorString(bg);
+            // If it has a BG colour, then its NOT going to have
+            // borders :(
+            // Hover, I think this is the shape we want to draw eventually..
+
+            // String stroke = "stroke:none;";
+            // if( hasAllBorders )
+            // {
+            //     stroke = "stroke:black;stroke-width:10px;";
+            // }
+
+            String style = "fill-opacity:1;fill:" + colorString(bg);
             out.println("<rect x=\"" + bb.x + "\" y=\"" + bb.y + "\" width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"" + style + "\" />");
+        }
+        else
+        {
+
+            // This is how we import a rectangle with a border which only goes INWARDS.
+            // We must group the rect, and set the stroke on the group.
+            // If we only set the stroke on the rectangle then the border will go both ways,
+            // outwards + inwards.
+            //
+            // .cls-1 {
+            //     fill: #fff;
+            //     stroke: red;
+            //     stroke-width: 10px;
+            // }
+            // .cls-2 {
+            //     stroke: none;
+            // }
+            // .cls-3 {
+            //     fill: none;
+            // }
+            // <g id="Rectangle_343" data-name="Rectangle 343" class="cls-1" transform="translate(2120 864)">
+            //     <rect class="cls-2" width="37" height="44"/>
+            //     <rect class="cls-3" x="5" y="5" width="27" height="34"/>
+            // </g>
+            if( hasAllBorders )
+            {
+                String color = getBorderColourString( eb );
+                String stroke = "stroke:" + color + ";stroke-width:" + borders.top + "px;";
+                String style = stroke + "fill:white;";
+
+                int innerWidth = bb.width - borders.top;
+                int innerHeight = bb.height - borders.top;
+
+                double inset = borders.top / 2.0;
+
+                out.println( "<g style=\"" + style + "\" transform=\"translate(" + bb.x + " " + bb.y + ")\" >" );
+                out.println("<rect width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"stroke:none;\" />");
+                out.println("<rect x=\"" + inset + "\" y=\"" + inset + "\" width=\"" + innerWidth + "\" height=\"" + innerHeight + "\"  style=\"fill:none;\"  />");
+                out.println( "</g>" );
+            }
         }
 
         //background image
@@ -135,15 +196,17 @@ public class SVGRenderer implements BoxRenderer
         }
 
         //border
-        LengthSet borders = eb.getBorder();
-        if (borders.top > 0)
-            writeBorderSVG(eb, bb.x, bb.y, bb.x + bb.width, bb.y, "top", borders.top, 0, borders.top/2);
-        if (borders.right > 0)
-            writeBorderSVG(eb, bb.x + bb.width, bb.y, bb.x + bb.width, bb.y + bb.height, "right", borders.right, -borders.right/2, 0);
-        if (borders.bottom > 0)
-            writeBorderSVG(eb, bb.x, bb.y + bb.height, bb.x + bb.width, bb.y + bb.height, "bottom", borders.bottom, 0, -borders.bottom/2);
-        if (borders.left > 0)
-            writeBorderSVG(eb, bb.x, bb.y, bb.x, bb.y + bb.height, "left", borders.left, borders.left/2, 0);
+        if( !hasAllBorders )
+        {
+            if (borders.top > 0)
+                writeBorderSVG(eb, bb.x, bb.y, bb.x + bb.width, bb.y, "top", borders.top, 0, borders.top/2);
+            if (borders.right > 0)
+                writeBorderSVG(eb, bb.x + bb.width, bb.y, bb.x + bb.width, bb.y + bb.height, "right", borders.right, -borders.right/2, 0);
+            if (borders.bottom > 0)
+                writeBorderSVG(eb, bb.x, bb.y + bb.height, bb.x + bb.width, bb.y + bb.height, "bottom", borders.bottom, 0, -borders.bottom/2);
+            if (borders.left > 0)
+                writeBorderSVG(eb, bb.x, bb.y, bb.x, bb.y + bb.height, "left", borders.left, borders.left/2, 0);
+        }
     }
 
     public void renderTextContent(TextBox text)
@@ -226,6 +289,32 @@ public class SVGRenderer implements BoxRenderer
     private void writeFooter()
     {
         out.println("</svg>");
+    }
+
+    private String getBorderColourString(ElementBox eb)
+    {
+        CSSProperty.BorderColor bclr = eb.getStyle().getProperty("border-top-color");
+        TermColor tclr = eb.getStyle().getValue(TermColor.class, "border-top-color");
+        CSSProperty.BorderStyle bst = eb.getStyle().getProperty("border-top-style");
+
+        if (bst != CSSProperty.BorderStyle.HIDDEN && bclr != CSSProperty.BorderColor.TRANSPARENT)
+        {
+            Color clr = null;
+            if (tclr != null)
+                clr = tclr.getValue();
+            if (clr == null)
+            {
+                clr = eb.getVisualContext().getColor();
+                if (clr == null)
+                    clr = Color.BLACK;
+            }
+
+            if( clr != null )
+            {
+                return colorString( clr );
+            }
+        }
+        return null;
     }
 
     private void writeBorderSVG(ElementBox eb, int x1, int y1, int x2, int y2, String side, int width, int right, int down)
