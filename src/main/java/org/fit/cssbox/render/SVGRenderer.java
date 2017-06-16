@@ -6,12 +6,12 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * CSSBox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with CSSBox. If not, see <http://www.gnu.org/licenses/>.
  *
@@ -48,18 +48,18 @@ import org.fit.cssbox.misc.Base64Coder;
 
 /**
  * A renderer that produces an SVG output.
- * 
+ *
  * @author burgetr
  */
 public class SVGRenderer implements BoxRenderer
 {
     private PrintWriter out;
-    
+
     private int rootw;
     private int rooth;
-    
+
     private int idcounter;
-    
+
     public SVGRenderer(int rootWidth, int rootHeight, Writer out)
     {
         idcounter = 1;
@@ -67,21 +67,19 @@ public class SVGRenderer implements BoxRenderer
         rooth = rootHeight;
         this.out = new PrintWriter(out);
         writeHeader();
+
+        System.out.println( "Using new renderer" );
     }
-    
+
     //====================================================================================================
-    
+
     public void startElementContents(ElementBox elem)
     {
         if (elem instanceof BlockBox && ((BlockBox) elem).getOverflow() != BlockBox.OVERFLOW_VISIBLE)
         {
-            //for blocks with overflow != visible generate a clipping group
-            Rectangle cb = elem.getClippedContentBounds();
-            String clip = "cssbox-clip-" + idcounter;
-            out.print("<clipPath id=\"" + clip + "\">");
-            out.print("<rect x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" />");
-            out.println("</clipPath>");
-            out.println("<g id=\"cssbox-obj-" + idcounter + "\" clip-path=\"url(#" + clip + ")\">");
+            // For blocks with overflow not visible, put them in a group.
+            // We can kind of think like these as groups of elements (parent, children etc)
+            out.println("<g id=\"cssbox-obj-" + idcounter + "\">");
             idcounter++;
         }
     }
@@ -108,7 +106,7 @@ public class SVGRenderer implements BoxRenderer
             String style = "stroke:none;fill-opacity:1;fill:" + colorString(bg);
             out.println("<rect x=\"" + bb.x + "\" y=\"" + bb.y + "\" width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"" + style + "\" />");
         }
-        
+
         //background image
         if (eb.getBackgroundImages() != null && eb.getBackgroundImages().size() > 0)
         {
@@ -133,9 +131,9 @@ public class SVGRenderer implements BoxRenderer
                     out.println("<image x=\"" + ix + "\" y=\"" + iy + "\" width=\"" + iw + "\" height=\"" + ih + "\" xlink:href=\"" + imgdata + "\" />");
                 }
             }
-            
+
         }
-    
+
         //border
         LengthSet borders = eb.getBorder();
         if (borders.top > 0)
@@ -152,14 +150,14 @@ public class SVGRenderer implements BoxRenderer
     {
         Rectangle b = text.getAbsoluteBounds();
         VisualContext ctx = text.getVisualContext();
-        
-        String style = "font-size:" + ctx.getFontSize() + "pt;" + 
-                       "font-weight:" + (ctx.getFont().isBold()?"bold":"normal") + ";" + 
+
+        String style = "font-size:" + ctx.getFontSize() + "pt;" +
+                       "font-weight:" + (ctx.getFont().isBold()?"bold":"normal") + ";" +
                        "font-variant:" + (ctx.getFont().isItalic()?"italic":"normal") + ";" +
                        "font-family:" + ctx.getFont().getFamily() + ";" +
                        "fill:" + colorString(ctx.getColor()) + ";" +
                        "stroke:none";
-        
+
         if (!ctx.getTextDecoration().isEmpty())
             style += ";text-decoration:" + ctx.getTextDecorationString();
 
@@ -205,14 +203,14 @@ public class SVGRenderer implements BoxRenderer
             }
         }
     }
-    
+
     public void close()
     {
         writeFooter();
     }
-    
+
     //====================================================================================================
-    
+
     private void writeHeader()
     {
         out.println("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?>");
@@ -224,7 +222,7 @@ public class SVGRenderer implements BoxRenderer
         out.println("         viewBox=\"0 0 " + rootw + " " + rooth + "\"");
         out.println("         zoomAndPan=\"disable\" >");
     }
-    
+
     private void writeFooter()
     {
         out.println("</svg>");
@@ -269,21 +267,21 @@ public class SVGRenderer implements BoxRenderer
             {
                 stroke = "stroke-width:" + width;
             }
-            
+
             String coords = "M " + (x1+right) + "," + (y1+down) + " L " + (x2+right) + "," + (y2+down);
             String style = "fill:none;stroke:" + colorString(clr) + ";" + stroke;
-            out.println("<path style=\"" + style + "\" d=\"" + coords + "\" />");  
+            out.println("<path style=\"" + style + "\" d=\"" + coords + "\" />");
         }
     }
-    
+
     private String colorString(Color color)
     {
         return String.format("#%02x%02x%02x", color.getRed(), color.getGreen(), color.getBlue());
     }
-    
+
     private String htmlEntities(String s)
     {
         return s.replaceAll("&", "&amp;").replaceAll(">", "&gt;").replaceAll("<", "&lt;");
     }
-    
+
 }
