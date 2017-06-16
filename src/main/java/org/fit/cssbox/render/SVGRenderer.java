@@ -77,9 +77,38 @@ public class SVGRenderer implements BoxRenderer
     {
         if (elem instanceof BlockBox && ((BlockBox) elem).getOverflow() != BlockBox.OVERFLOW_VISIBLE)
         {
-            // For blocks with overflow not visible, put them in a group.
-            // We can kind of think like these as groups of elements (parent, children etc)
-            out.println("<g id=\"cssbox-obj-" + idcounter + "\">");
+            // Work out how many parent elements we have
+            int parentCount = 0;
+            Box parent = elem;
+            do
+            {
+                parent = parent.getParent();
+                if( parent != null )
+                {
+                    parentCount ++;
+                }
+            } while( parent != null );
+
+
+            // If we have 4, we are pobably the top level banner rectangle/group
+            // So we should make a clippath, so that our deals aren't hanging
+            // over the edge of the banners.
+            if( parentCount == 4 )
+            {
+                Rectangle cb = elem.getClippedContentBounds();
+                String clip = "cssbox-clip-" + idcounter;
+                out.print("<clipPath id=\"" + clip + "\">");
+                out.print("<rect x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" />");
+                out.println("</clipPath>");
+                out.println("<g id=\"cssbox-obj-" + idcounter + "\" clip-path=\"url(#" + clip + ")\">");
+            }
+            else
+            {
+                // For blocks with overflow not visible, put them in a group.
+                // We can kind of think like these as groups of elements (parent, children etc)
+                out.println("<g id=\"cssbox-obj-" + idcounter + "\">");
+            }
+
             idcounter++;
         }
     }
@@ -103,6 +132,19 @@ public class SVGRenderer implements BoxRenderer
         }
         Color bg = eb.getBgcolor();
 
+
+        // Uncomment this to print out the node depth
+        // int parentCount = 0;
+        // Box parent = eb;
+        // do
+        // {
+        //     parent = parent.getParent();
+        //     if( parent != null )
+        //     {
+        //         parentCount ++;
+        //     }
+        // } while( parent != null );
+        // out.println( "<!-- Num parents: " + parentCount + " -->" );
 
         LengthSet borders = eb.getBorder();
         boolean hasAllBorders = borders.top > 0 &&
