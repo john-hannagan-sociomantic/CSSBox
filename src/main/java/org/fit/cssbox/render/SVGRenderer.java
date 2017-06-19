@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -73,40 +74,123 @@ public class SVGRenderer implements BoxRenderer
 
     //====================================================================================================
 
+    private boolean hasClass(ElementBox elem, String className)
+    {
+        if( elem.getElement().hasAttribute( "class" ) )
+        {
+            List<String> arr = java.util.Arrays.asList(
+                elem.getElement()
+                .getAttribute( "class" )
+                .split( " " ) );
+
+            return arr.contains( className );
+
+        }
+        return false;
+    }
+
+    private String getElementName(ElementBox elem)
+    {
+        if( hasClass(elem, "products" ) )
+            return "$products";
+        if( hasClass(elem, "item" ) )
+            return "$item";
+        if( hasClass(elem, "metadata-manufacturer" ) )
+            return "$manufacturer";
+        if( hasClass(elem, "metadata-title" ) )
+            return "$title";
+        if( hasClass(elem, "metadata-c2a" ) )
+            return "$c2a";
+        if( hasClass(elem, "metadata-price" ) )
+            return "$price";
+        if( hasClass(elem, "banner-item-image" ) )
+            return "$item-image";
+        if( hasClass(elem, "logo" ) )
+            return "$logo";
+        if( hasClass(elem, "usp" ) )
+            return "$usp";
+        if( hasClass(elem, "metadata-text" ) )
+            return "$text";
+        if( hasClass(elem, "metadata-sale-price" ) )
+            return "$sale-price";
+        if( hasClass(elem, "metadata-old-price" ) )
+            return "$old-price";
+        if( hasClass(elem, "metadata-sale-icon" ) )
+            return "$sale-icon";
+        if( hasClass(elem, "metadata-new-icon" ) )
+            return "$new-icon";
+
+        if( isTopLevelBannerElement( elem ) )
+            return "$" + getBannerSizeString(elem);
+
+        // If we can't find an exact match, return
+        // the full class list (but not if its just Xanonymous).
+        String fullClassList = elem.getElement().getAttribute( "class" );
+        return fullClassList == "Xanonymous" ? "" : fullClassList;
+    }
+    private String getBannerSizeString(ElementBox elem)
+    {
+        if( elem.getElement().hasAttribute( "class" ) )
+        {
+            String[] classes =
+                elem.getElement()
+                .getAttribute( "class" )
+                .split( " " );
+
+            for( String c : classes )
+            {
+                if( c.startsWith( "banner-size-" ) )
+                    return c;
+            }
+        }
+        return null;
+    }
+    private boolean isTopLevelBannerElement(ElementBox elem)
+    {
+        return hasClass( elem, "product-banner" );
+    }
+
     public void startElementContents(ElementBox elem)
     {
         if (elem instanceof BlockBox && ((BlockBox) elem).getOverflow() != BlockBox.OVERFLOW_VISIBLE)
         {
             // Work out how many parent elements we have
-            int parentCount = 0;
-            Box parent = elem;
-            do
-            {
-                parent = parent.getParent();
-                if( parent != null )
-                {
-                    parentCount ++;
-                }
-            } while( parent != null );
+            // int parentCount = 0;
+            // Box parent = elem;
+            // do
+            // {
+            //     parent = parent.getParent();
+            //     if( parent != null )
+            //     {
+            //         parentCount ++;
+            //     }
+            // } while( parent != null );
+
+            out.println( "<!-- Class attribute [" + elem.getElement().getAttribute( "class" ) + "] -->" );
 
 
             // If we have 4, we are pobably the top level banner rectangle/group
             // So we should make a clippath, so that our deals aren't hanging
             // over the edge of the banners.
-            if( parentCount == 4 )
+            if( isTopLevelBannerElement( elem ) )
             {
+                String bannerSize = getBannerSizeString( elem );
+
                 Rectangle cb = elem.getClippedContentBounds();
                 String clip = "cssbox-clip-" + idcounter;
                 out.print("<clipPath id=\"" + clip + "\">");
                 out.print("<rect x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" />");
                 out.println("</clipPath>");
-                out.println("<g id=\"cssbox-obj-" + idcounter + "\" clip-path=\"url(#" + clip + ")\">");
+                out.println("<g data-name=\"" + bannerSize + "\" id=\"cssbox-obj-" + idcounter + "\" clip-path=\"url(#" + clip + ")\">");
             }
             else
             {
                 // For blocks with overflow not visible, put them in a group.
                 // We can kind of think like these as groups of elements (parent, children etc)
-                out.println("<g id=\"cssbox-obj-" + idcounter + "\">");
+                String name = getElementName( elem );
+                String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
+
+                out.println("<g " + dataName + " id=\"cssbox-obj-" + idcounter + "\">");
             }
 
             idcounter++;
@@ -165,9 +249,11 @@ public class SVGRenderer implements BoxRenderer
             // {
             //     stroke = "stroke:black;stroke-width:10px;";
             // }
+            String name = getElementName( eb );
+            String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
 
             String style = "fill-opacity:1;fill:" + colorString(bg);
-            out.println("<rect x=\"" + bb.x + "\" y=\"" + bb.y + "\" width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"" + style + "\" />");
+            out.println("<rect " + dataName + " x=\"" + bb.x + "\" y=\"" + bb.y + "\" width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"" + style + "\" />");
         }
         else
         {
@@ -206,7 +292,10 @@ public class SVGRenderer implements BoxRenderer
 
                 double inset = borders.top / 2.0;
 
-                out.println( "<g style=\"" + style + "\" transform=\"translate(" + bb.x + " " + bb.y + ")\" >" );
+                String name = getElementName( eb );
+                String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
+
+                out.println( "<g " + dataName + " style=\"" + style + "\" transform=\"translate(" + bb.x + " " + bb.y + ")\" >" );
                 out.println("<rect width=\"" + boxWidth + "\" height=\"" + boxHeight + "\" style=\"stroke:none;\" />");
                 out.println("<rect x=\"" + inset + "\" y=\"" + inset + "\" width=\"" + innerWidth + "\" height=\"" + innerHeight + "\"  style=\"fill:none;\"  />");
                 out.println( "</g>" );
@@ -234,7 +323,11 @@ public class SVGRenderer implements BoxRenderer
                     int iy = bb.y + eb.getBorder().top;
                     int iw = bb.width - eb.getBorder().right - eb.getBorder().left;
                     int ih = bb.height - eb.getBorder().bottom - eb.getBorder().top;
-                    out.println("<image x=\"" + ix + "\" y=\"" + iy + "\" width=\"" + iw + "\" height=\"" + ih + "\" xlink:href=\"" + imgdata + "\" />");
+
+                    String name = getElementName( eb );
+                    String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
+
+                    out.println("<image " + dataName + " x=\"" + ix + "\" y=\"" + iy + "\" width=\"" + iw + "\" height=\"" + ih + "\" xlink:href=\"" + imgdata + "\" />");
                 }
             }
 
@@ -292,7 +385,12 @@ public class SVGRenderer implements BoxRenderer
                     char[] data = Base64Coder.encode(os.toByteArray());
                     String imgdata = "data:image/png;base64," + new String(data);
                     Rectangle cb = ((Box) box).getAbsoluteContentBounds();
-                    out.println("<image x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" xlink:href=\"" + imgdata + "\" />");
+
+                    // TODO: This needs to also add the data name. how do we get the Element?
+                    String name = getElementName( cont.getOwner() );
+                    String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
+
+                    out.println("<image " + dataName + " x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" xlink:href=\"" + imgdata + "\" />");
                 }
             }
             else if (cont instanceof ReplacedText) //HTML object
@@ -303,6 +401,7 @@ public class SVGRenderer implements BoxRenderer
                 out.print("<clipPath id=\"" + clip + "\">");
                 out.print("<rect x=\"" + cb.x + "\" y=\"" + cb.y + "\" width=\"" + cb.width + "\" height=\"" + cb.height + "\" />");
                 out.println("</clipPath>");
+
                 //the group containing the rendered object
                 out.println("<g id=\"cssbox-obj-" + (idcounter++) + "\" clip-path=\"url(#" + clip + ")\">");
                 ReplacedText rt = (ReplacedText) cont;
