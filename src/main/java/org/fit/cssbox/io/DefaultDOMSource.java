@@ -6,12 +6,12 @@
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *  
+ *
  * CSSBox is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU Lesser General Public License for more details.
- *  
+ *
  * You should have received a copy of the GNU Lesser General Public License
  * along with CSSBox. If not, see <http://www.gnu.org/licenses/>.
  *
@@ -55,11 +55,17 @@ public class DefaultDOMSource extends DOMSource
             li.parent[oldparents.length] = HTMLElements.getElement(HTMLElements.MENU);
             neko_fixed = true;
         }
-        
+
         DOMParser parser = new DOMParser(new HTMLConfiguration());
         parser.setProperty("http://cyberneko.org/html/properties/names/elems", "lower");
-        if (charset != null)
-            parser.setProperty("http://cyberneko.org/html/properties/default-encoding", charset);
+
+        // Use utf-8 by default
+        if (charset == null)
+        {
+            setContentType( "charset=utf-8" );
+        }
+        parser.setProperty("http://cyberneko.org/html/properties/default-encoding", charset);
+
         parser.parse(new org.xml.sax.InputSource(getDocumentSource().getInputStream()));
         return parser.getDocument();
     }
