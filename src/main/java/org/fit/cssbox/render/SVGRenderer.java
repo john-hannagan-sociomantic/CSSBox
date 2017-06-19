@@ -68,8 +68,6 @@ public class SVGRenderer implements BoxRenderer
         rooth = rootHeight;
         this.out = new PrintWriter(out);
         writeHeader();
-
-        System.out.println( "Using new renderer" );
     }
 
     //====================================================================================================
@@ -212,23 +210,8 @@ public class SVGRenderer implements BoxRenderer
         if (eb instanceof Viewport)
         {
             bb = eb.getClippedBounds(); //for the root box (Viewport), use the whole clipped content
-            out.println( "<!-- is instance of viewport: using getClippedBounds -->" );
         }
         Color bg = eb.getBgcolor();
-
-
-        // Uncomment this to print out the node depth
-        // int parentCount = 0;
-        // Box parent = eb;
-        // do
-        // {
-        //     parent = parent.getParent();
-        //     if( parent != null )
-        //     {
-        //         parentCount ++;
-        //     }
-        // } while( parent != null );
-        // out.println( "<!-- Num parents: " + parentCount + " -->" );
 
         LengthSet borders = eb.getBorder();
         boolean hasAllBorders = borders.top > 0 &&
@@ -241,14 +224,7 @@ public class SVGRenderer implements BoxRenderer
         if (bg != null)
         {
             // If it has a BG colour, then its NOT going to have
-            // borders :(
-            // Hover, I think this is the shape we want to draw eventually..
-
-            // String stroke = "stroke:none;";
-            // if( hasAllBorders )
-            // {
-            //     stroke = "stroke:black;stroke-width:10px;";
-            // }
+            // borders
             String name = getElementName( eb );
             String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
 
@@ -257,7 +233,6 @@ public class SVGRenderer implements BoxRenderer
         }
         else
         {
-
             // This is how we import a rectangle with a border which only goes INWARDS.
             // We must group the rect, and set the stroke on the group.
             // If we only set the stroke on the rectangle then the border will go both ways,
@@ -386,7 +361,6 @@ public class SVGRenderer implements BoxRenderer
                     String imgdata = "data:image/png;base64," + new String(data);
                     Rectangle cb = ((Box) box).getAbsoluteContentBounds();
 
-                    // TODO: This needs to also add the data name. how do we get the Element?
                     String name = getElementName( cont.getOwner() );
                     String dataName = name != "" ? " data-name=\"" + name + "\" " : "";
 
