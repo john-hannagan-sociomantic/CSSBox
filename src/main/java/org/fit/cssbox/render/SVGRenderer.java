@@ -337,6 +337,10 @@ public class SVGRenderer implements BoxRenderer
         if (!ctx.getTextDecoration().isEmpty())
             style += ";text-decoration:" + ctx.getTextDecorationString();
 
+        // Draw a box behind the text, so we get the full dims of it
+        Rectangle bb = text.getAbsoluteContainingBlock();
+        out.println("<rect data-name=\"" + htmlEntities(text.getText()) + "\" x=\"" + bb.x + "\" y=\"" + bb.y + "\" width=\"" + bb.width + "\" height=\"" + bb.height + "\" style=\"opacity:0\" />");
+
         out.println("<text x=\"" + b.x + "\" y=\"" + (b.y + text.getBaselineOffset()) + "\" width=\"" + b.width + "\" height=\"" + b.height + "\" style=\"" + style + "\">" + htmlEntities(text.getText()) + "</text>");
     }
 
